@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { hashPassword } from '@/utils/auth';
+import crypto from '@/utils/crypto';
 
 const prisma = new PrismaClient();
 
@@ -21,8 +22,10 @@ export async function POST(req) {
       return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
 
+    // Decrypt password
+    const decryptedPassword = crypto.decrypt(password)
     // Hash the password before saving
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(decryptedPassword);
 
     // Create user
     const user = await prisma.user.create({

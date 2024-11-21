@@ -20,16 +20,17 @@ const validationSchema = Yup.object({
     password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
 });
 
-export default function LoginPage() {
+export default function SignupPage() {
     const router = useRouter();
 
     const initialValues = {
+        name: 'abid',
         email: 'abid@mail.com',
         password: 'Password@1234'
     };
 
     const submit = async (data) => {
-        await user.login(data);
+        await user.signup(data);
     };
     
     const onSuccess = () => {
@@ -47,7 +48,7 @@ export default function LoginPage() {
     });
 
     const mutation = useMutation({
-        mutationKey: ['login'],
+        mutationKey: ['signup'],
         mutationFn: submit,
         onSuccess,
     });
@@ -61,10 +62,17 @@ export default function LoginPage() {
             <CardContent>
                 <form onSubmit={formik.handleSubmit} className="flex flex-col items-center justify-center space-y-4 w-full">
 
-                    <InputWrapper
-                        label="Email"
-                        error={formik.errors?.email}
-                        touched={formik.touched?.email}>
+                    <InputWrapper label="name" error={formik.errors?.name} touched={formik.touched?.name}>
+                        <Input
+                            name="name"
+                            placeholder="name"
+                            value={formik.values?.name}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                        />
+                    </InputWrapper>
+
+                    <InputWrapper label="Email" error={formik.errors?.email} touched={formik.touched?.email}>
                         <Input
                             name="email"
                             type="email"
@@ -75,10 +83,7 @@ export default function LoginPage() {
                         />
                     </InputWrapper>
 
-                    <InputWrapper
-                        label="Password"
-                        error={formik.errors?.password}
-                        touched={formik.touched?.password}>
+                    <InputWrapper label="Password" error={formik.errors?.password} touched={formik.touched?.password}>
                         <Input
                             name="password"
                             type="password"
@@ -92,7 +97,7 @@ export default function LoginPage() {
                     <div>
                         <Submit
                             disabled={mutation.isPending || mutation.isSuccess}
-                            label={mutation.isPending ? 'Submitting...' : 'Login'} // Dynamic label
+                            label={mutation.isPending ? 'Submitting...' : 'Signup'} // Dynamic label
                             icon={mutation.isPending ? <Spinner size="4" /> : <RiSendPlaneLine />} // Dynamic icon
                         />
                     </div>
@@ -100,8 +105,7 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter>
                 <div className='flex flex-col space-y-2'>
-                    <Link href={'#'} className='hover:underline hover:text-primary'>Forgot password?</Link>
-                    <Link href={'signup'} className='hover:underline hover:text-primary'>Create an account</Link>
+                    <Link href={'login'} className='hover:underline hover:text-primary'>Have an account?</Link>
                 </div>
             </CardFooter>
         </Card>

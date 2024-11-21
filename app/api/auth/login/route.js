@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { verifyPassword, generateJWT } from '@/utils/auth';
+import crypto from '@/utils/crypto';
 
 const prisma = new PrismaClient();
 
@@ -21,8 +22,10 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 400 });
     }
 
+    // Decrypt password
+    const decryptedPassword = crypto.decrypt(password)
     // Verify the password
-    const isValid = await verifyPassword(password, user.password);
+    const isValid = await verifyPassword(decryptedPassword, user.password);
 
     if (!isValid) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 400 });
