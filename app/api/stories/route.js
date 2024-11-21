@@ -4,12 +4,31 @@ import client from '@/utils/elasticsearch';
 
 const prisma = new PrismaClient();
 
+// Helper function to handle Elasticsearch indexing in the background
+async function indexStoryInElasticsearch(story) {
+    try {
+        await client.index({
+            index: 'stories',
+            id: `${story.id}`,
+            body: {
+                title: story.title,
+                content: story.content,
+                createdAt: story.createdAt,
+            },
+        });
+        console.log('Story indexed successfully in Elasticsearch');
+    } catch (elasticError) {
+        console.error('Elasticsearch indexing error:', elasticError);
+    }
+}
+
 // Create story API route
 export async function POST(req) {
     try {
         // Parse the request body
         const { title, content } = await req.json();
 
+        // Validate input
         if (!title || !content) {
             return NextResponse.json({ message: 'Title and content are required' }, { status: 400 });
         }
@@ -21,22 +40,10 @@ export async function POST(req) {
 
         console.log('Story saved to database:', story);
 
-        // Index the story in Elasticsearch
-        // try {
-        //     await client.index({
-        //         index: 'stories',
-        //         id: `${story.id}`, // Convert integer ID to string
-        //         body: {
-        //             title: story.title,
-        //             content: story.content,
-        //             createdAt: story.createdAt,
-        //         },
-        //     });
-        //     console.log('Story indexed successfully in Elasticsearch');
-        // } catch (elasticError) {
-        //     console.error('Elasticsearch indexing error:', elasticError);
-        // }
+        // Index the story in Elasticsearch asynchronously
+        indexStoryInElasticsearch(story);
 
+        // Return the saved story
         return NextResponse.json(story, { status: 201 });
     } catch (error) {
         console.error('Error creating story:', error);
@@ -44,20 +51,18 @@ export async function POST(req) {
     }
 }
 
-// Fetch stories API route
+// Fetch stories API route with pagination and search
 export async function GET(req) {
     try {
-        // Parse the query parameters
-        const { query = '' } = req.nextUrl.searchParams; // Get query parameter from URL
+        // Parse the query parameters (with pagination support)
+        const { query = '', page = 1, pageSize = 10 } = req.nextUrl.searchParams;
 
-        // 1. Fetch stories from the database
-        const storiesFromDb = await prisma.story.findMany();
-
-        let storiesFromSearch = [];
-        // If there's a query parameter, search in Elasticsearch
+        // If there is a search query, perform an Elasticsearch search
         if (query) {
             const { body } = await client.search({
-                index: 'stories', // Elasticsearch index
+                index: 'stories',
+                from: (page - 1) * pageSize, // Calculate pagination
+                size: pageSize, // Limit the number of results per page
                 body: {
                     query: {
                         multi_match: {
@@ -69,18 +74,26 @@ export async function GET(req) {
             });
 
             // Map Elasticsearch results to the response format
-            storiesFromSearch = body.hits.hits.map((hit) => ({
+            const storiesFromSearch = body.hits.hits.map((hit) => ({
                 id: hit._id,
                 title: hit._source.title,
                 content: hit._source.content,
                 createdAt: hit._source.createdAt,
             }));
+
+            return NextResponse.json(storiesFromSearch, { status: 200 });
+        } else {
+            // If there's no search query, return a paginated list from the database
+            const storiesFromDb = await prisma.story.findMany({
+                skip: (page - 1) * pageSize, // Pagination
+                take: pageSize, // Limit number of stories per page
+                orderBy: {
+                    createdAt: 'desc', // Optional: Order by creation date (latest first)
+                },
+            });
+
+            return NextResponse.json(storiesFromDb, { status: 200 });
         }
-
-        // If a search query was provided, return Elasticsearch results; otherwise, return all stories from the database
-        const responseStories = query ? storiesFromSearch : storiesFromDb;
-
-        return NextResponse.json(responseStories, { status: 200 });
     } catch (error) {
         console.error('Error fetching stories:', error);
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
