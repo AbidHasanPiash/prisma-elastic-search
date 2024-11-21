@@ -7,10 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid()) @map("_id")
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stories   Story[]  // One-to-many relationship with Story model
+}
+
 model Story {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId    // For MongoDB
-  // id        Int   @id @default(autoincrement()) @map("_id")      // For SQL
+  id        String   @id @default(cuid()) @map("_id")
   title     String
   content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
