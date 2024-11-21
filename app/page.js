@@ -18,10 +18,10 @@ export default function Home() {
         </div>
 
         {/* Story Search Section */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Search Stories</h2>
           <StorySearch />
-        </div>
+        </div> */}
 
         {/* Story List Section */}
         <div>

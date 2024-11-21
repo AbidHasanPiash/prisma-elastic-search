@@ -1,48 +1,33 @@
 "use client";
-import { useEffect, useState } from 'react';
+import apiConfig from '@/configs/apiConfig';
+import { fetchData } from '@/utils/axios';
+import { useQuery } from '@tanstack/react-query';
+import Spinner from '@/components/common/Spinner';
+import { Card } from '@/components/ui/card';
 
 const StoryList = () => {
-  const [stories, setStories] = useState([]);
-  const [error, setError] = useState(null);  // State for error handling
 
-  useEffect(() => {
-    const fetchStories = async () => {
-      try {
-        const res = await fetch('/api/stories');
-        if (!res.ok) {
-          throw new Error('Failed to fetch stories');
-        }
-        const data = await res.json();
+  const { isLoading, data, error } = useQuery({
+    queryKey: ['stories'],
+    queryFn: () => fetchData(apiConfig.GET_STORIES),
+  });
 
-        // Check if the data is an array
-        if (Array.isArray(data)) {
-          setStories(data);
-        } else {
-          throw new Error('Data is not in the expected format (array)');
-        }
-      } catch (err) {
-        setError(err.message);  // Set error message if there's an issue
-      }
-    };
-
-    fetchStories();
-  }, []);
+  if (isLoading) {
+    return <Spinner/>
+  }
 
   return (
     <div className="p-4 space-y-4">
-      {error ? (
-        <p className="text-red-500 font-semibold">{`Error: ${error}`}</p>  // Display error message
-      ) : (
-        <ul className="space-y-4">
-          {Array.isArray(stories) && stories?.map((story) => (
-            <li key={story.id} className="p-4 border rounded-lg shadow-md hover:bg-gray-50 transition-colors">
-              <h3 className="text-xl font-semibold text-gray-800">{story.title}</h3>
-              <p className="text-gray-600">{story.content}</p>
-              <p className="text-sm text-gray-500 mt-2">Created At: {new Date(story.createdAt).toLocaleString()}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      {error && <p className="text-red-500 font-semibold">{`Error: ${error}`}</p> }
+      <div className="space-y-4">
+        {Array.isArray(data) && data?.map((story) => (
+          <Card key={story.id} className="p-4">
+            <h3 className="text-xl font-semibold">{story.title}</h3>
+            <p>{story.content}</p>
+            <p className="text-sm mt-2">Created At: {new Date(story.createdAt).toLocaleString()}</p>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

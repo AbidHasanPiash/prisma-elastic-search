@@ -2,7 +2,7 @@
 
 import { Input } from '@/components/ui/input';
 import { useFormik } from 'formik';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Yup from 'yup';
 import { useRouter } from 'next/navigation';
 import Spinner from '@/components/common/Spinner';
@@ -19,6 +19,7 @@ const validationSchema = Yup.object({
 });
 
 export default function StoryForm() {
+    const queryClient = useQueryClient();
     const router = useRouter();
 
     const initialValues = {
@@ -32,7 +33,8 @@ export default function StoryForm() {
     
     const onSuccess = () => {
         formik.resetForm();
-        // router.push('/')
+        queryClient.invalidateQueries(['stories']);
+        
     };
 
     const formik = useFormik({
